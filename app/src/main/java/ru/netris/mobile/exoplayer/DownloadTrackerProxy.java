@@ -34,7 +34,7 @@ import java.io.File;
 @Kroll.proxy
 public class DownloadTrackerProxy extends KrollProxy implements DownloadTracker.Listener
 {
-	private static final String TAG = "DownloadTrackerProxy";
+	private static final String TAG = "TiExoplayerModule:DownloadTrackerProxy";
 	private String downloadActionFile = "actions";
 	private String downloadTrackerActionFile = "tracked_actions";
 	private String downloadContentDirectory = "downloads";
@@ -51,13 +51,25 @@ public class DownloadTrackerProxy extends KrollProxy implements DownloadTracker.
 
 	public DownloadTrackerProxy()
 	{
-		userAgent = Util.getUserAgent(TiApplication.getAppRootOrCurrentActivity(), TiExoplayerModule.MODULE_NAME);
+		String moduleUserAgent = TiExoplayerModule.getInstance().getUserAgent();
+		userAgent = Util.getUserAgent(TiApplication.getAppRootOrCurrentActivity(),  moduleUserAgent.equals("") ? TiExoplayerModule.MODULE_NAME : moduleUserAgent);
 	}
 
 	/** Returns a {@link HttpDataSource.Factory}. */
 	public HttpDataSource.Factory buildHttpDataSourceFactory(TransferListener<? super DataSource> listener)
 	{
-		return new DefaultHttpDataSourceFactory(userAgent, listener);
+		DefaultHttpDataSourceFactory result = new DefaultHttpDataSourceFactory(userAgent, listener);
+		/*if(TiExoplayerModule.getInstance().getHandleCookies()) {
+			result.getDefaultRequestProperties().set("Set-Cookie", "CLACK.SESSION=91acfacaf3a3407c8e9582b0e340a610503ae217; path=/");
+		}*/
+		return result;
+	}
+
+	public HttpDataSource.Factory buildHttpDataSourceFactory(TransferListener<? super DataSource> listener, String cookie)
+	{
+		DefaultHttpDataSourceFactory result = new DefaultHttpDataSourceFactory(userAgent, listener);
+		result.getDefaultRequestProperties().set("Set-Cookie", cookie);
+		return result;
 	}
 
 	/** Returns a {@link DataSource.Factory}. */
@@ -65,7 +77,23 @@ public class DownloadTrackerProxy extends KrollProxy implements DownloadTracker.
 	{
 		DefaultDataSourceFactory upstreamFactory = new DefaultDataSourceFactory(
 			TiApplication.getAppRootOrCurrentActivity(), listener, buildHttpDataSourceFactory(listener));
-		return buildReadOnlyCacheDataSource(upstreamFactory, getDownloadCache());
+		if(TiExoplayerModule.getInstance().getUseSimpleCache()) {
+			return buildReadOnlyCacheDataSource(upstreamFactory, getDownloadCache());
+		} else {
+			return upstreamFactory;
+		}
+	}
+
+	public DataSource.Factory buildDataSourceFactory(TransferListener<? super DataSource> listener, String cookie)
+	{
+		DefaultDataSourceFactory upstreamFactory = new DefaultDataSourceFactory(
+				TiApplication.getAppRootOrCurrentActivity(), listener, buildHttpDataSourceFactory(listener, cookie));
+		if(TiExoplayerModule.getInstance().getUseSimpleCache()) {
+			return buildReadOnlyCacheDataSource(upstreamFactory, getDownloadCache());
+		}
+		else {
+			return upstreamFactory;
+		}
 	}
 
 	public DownloadManager getDownloadManager()
@@ -83,6 +111,7 @@ public class DownloadTrackerProxy extends KrollProxy implements DownloadTracker.
 	private synchronized void initDownloadManager()
 	{
 		if (downloadManager == null) {
+			Log.d(TAG, " > initDownloadManager");
 			DownloaderConstructorHelper downloaderConstructorHelper =
 				new DownloaderConstructorHelper(getDownloadCache(), buildHttpDataSourceFactory(/* listener= */ null));
 			downloadManager = new DownloadManager(
@@ -99,6 +128,8 @@ public class DownloadTrackerProxy extends KrollProxy implements DownloadTracker.
 	private synchronized Cache getDownloadCache()
 	{
 		if (downloadCache == null) {
+			Log.d(TAG, " > getDownloadCache -> downloadDirectory: " + getDownloadDirectory().getAbsolutePath());
+			Log.d(TAG, " > getDownloadCache -> downloadContentDirectory: " + this.downloadContentDirectory);
 			File downloadContentDirectory = new File(getDownloadDirectory(), this.downloadContentDirectory);
 			downloadCache = new SimpleCache(downloadContentDirectory, new NoOpCacheEvictor());
 		}
@@ -201,7 +232,7 @@ public class DownloadTrackerProxy extends KrollProxy implements DownloadTracker.
 	@Kroll.method
 	public void toggleDownload(String name, String uriString, String extension)
 	{
-		Log.d(TAG, "toggleDownload" + name + " " + uriString + " " + extension);
+		Log.d(TAG, "toggleDownload '" + name + "' '" + uriString + "' '" + extension + "'");
 		getDownloadTracker().toggleDownload(TiApplication.getAppCurrentActivity(), name, Uri.parse(uriString),
 											extension);
 	}

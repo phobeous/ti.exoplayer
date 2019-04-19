@@ -101,7 +101,7 @@ public class TiUIVideoView extends TiUIView
 	implements EventListener, PlayerControlView.VisibilityListener, MetadataOutput, VideoRendererEventListener
 
 {
-	private static final String TAG = "TiUIVideoView";
+	private static final String TAG = "TiExoplayerModule:TiUIVideoView";
 
 	private Activity activity;
 	private boolean inErrorState;
@@ -182,21 +182,20 @@ public class TiUIVideoView extends TiUIView
 	}
 
 	@Override
-	public void processProperties(KrollDict d)
-	{
+	public void processProperties(KrollDict d) {
 		if (videoView == null) {
 			activity = proxy.getActivity();
 			String path = "layout.player_view_surface_view";
 			if (proxy.hasPropertyAndNotNull(TiExoplayerModule.PROPERTY_SURFACE_TYPE)) {
 				int surfaceType = TiConvert.toInt(proxy.getProperty(TiExoplayerModule.PROPERTY_SURFACE_TYPE),
-												  TiExoplayerModule.SURFACE_TYPE_SURFACE_VIEW);
+						TiExoplayerModule.SURFACE_TYPE_SURFACE_VIEW);
 				if (surfaceType == TiExoplayerModule.SURFACE_TYPE_NONE) {
 					path = "layout.player_view_none";
 				} else if (surfaceType == TiExoplayerModule.SURFACE_TYPE_TEXTURE_VIEW) {
 					path = "layout.player_view_texture_view";
 				} else if (surfaceType != TiExoplayerModule.SURFACE_TYPE_SURFACE_VIEW) {
 					Log.e(TAG, "Wrong \"" + TiExoplayerModule.PROPERTY_SURFACE_TYPE + "\" property value:" + surfaceType
-								   + ". Fallback to SurfaceView");
+							+ ". Fallback to SurfaceView");
 				}
 			}
 			LayoutInflater inflater = LayoutInflater.from(activity);
@@ -284,7 +283,7 @@ public class TiUIVideoView extends TiUIView
 	@Override
 	public void onVisibilityChange(int visibility)
 	{
-		Log.d(TAG, "onVisibilityChange");
+		Log.d(TAG, "onVisibilityChange: " + visibility);
 	}
 
 	public boolean isPlaying()
@@ -397,7 +396,7 @@ public class TiUIVideoView extends TiUIView
 		if (state == Player.STATE_IDLE) {
 			// Url not loaded yet. Do that first.
 			Object urlObj = proxy.getProperty(TiC.PROPERTY_URL);
-			if (urlObj == null) {
+			if (urlObj == null || ((String)urlObj).equals("")) {
 				Log.w(TAG, "play() ignored, no url set.");
 				return;
 			}
@@ -663,7 +662,8 @@ public class TiUIVideoView extends TiUIView
 			return;
 		}
 		String uriString = TiConvert.toString(proxy.getProperty(TiC.PROPERTY_URL));
-		if (uriString == null) {
+		Log.d(TAG, " + initializePlayer -> uriString: '" + uriString + "'");
+		if (uriString == null || uriString.equals("")) {
 			return;
 		}
 		boolean needNewPlayer = player == null;
@@ -878,7 +878,7 @@ public class TiUIVideoView extends TiUIView
 		throws UnsupportedDrmException
 	{
 		HttpDataSource.Factory licenseDataSourceFactory =
-			new DefaultHttpDataSourceFactory(Util.getUserAgent(activity, TiExoplayerModule.MODULE_NAME),
+			new DefaultHttpDataSourceFactory(Util.getUserAgent(activity, "INZDR client R2D2 v.2 Android" /*TiExoplayerModule.MODULE_NAME*/),
 											 /* listener= */ null);
 		HttpMediaDrmCallback drmCallback = new HttpMediaDrmCallback(licenseUrl, licenseDataSourceFactory);
 		if (keyRequestPropertiesArray != null) {
@@ -910,25 +910,42 @@ public class TiUIVideoView extends TiUIView
 	@SuppressWarnings("unchecked")
 	private MediaSource buildMediaSource(Uri uri, @ContentType int type)
 	{
+		Log.d(TAG, " + buildMediaSource -> uri: '" + uri.toString() + "'");
 		switch (type) {
 			case C.TYPE_DASH:
+			Log.d(TAG, " > buildMediaSource -> TYPE_DASH");
 				return new DashMediaSource
 					.Factory(new DefaultDashChunkSource.Factory(mediaDataSourceFactory), buildDataSourceFactory(false))
 					.setManifestParser(new FilteringManifestParser<>(
 						new DashManifestParser(), (List<RepresentationKey>) getOfflineStreamKeys(uri)))
 					.createMediaSource(uri);
 			case C.TYPE_SS:
+				Log.d(TAG, " > buildMediaSource -> TYPE_SS");
 				return new SsMediaSource
 					.Factory(new DefaultSsChunkSource.Factory(mediaDataSourceFactory), buildDataSourceFactory(false))
 					.setManifestParser(new FilteringManifestParser<>(new SsManifestParser(),
 																	 (List<StreamKey>) getOfflineStreamKeys(uri)))
 					.createMediaSource(uri);
 			case C.TYPE_HLS:
+				Log.d(TAG, "> buildMediaSource -> TYPE_HLS");
 				return new HlsMediaSource.Factory(mediaDataSourceFactory)
 					.setPlaylistParser(new FilteringManifestParser<>(new HlsPlaylistParser(),
 																	 (List<RenditionKey>) getOfflineStreamKeys(uri)))
 					.createMediaSource(uri);
 			case C.TYPE_OTHER:
+				Log.d(TAG, " > buildMediaSource -> TYPE_OTHER");
+				if(TiExoplayerModule.getInstance().getHandleCookies())
+				{
+					Log.d(TAG, " > buildMediaSource -> cookies handling is ON");
+					String cookiesString = CookiesHelper.getCookiesStringForURL(uri.toString());
+					if (cookiesString != null && cookiesString.length() > 0) {
+						Log.d(TAG, " > buildMediaSource -> Found cookie. Setting header: " + cookiesString);
+						mediaDataSourceFactory = buildDataSourceFactory(true, cookiesString);
+						//((HttpDataSource.Factory)mediaDataSourceFactory).getDefaultRequestProperties().set("Set-Cookie", cookiesString);
+					} else {
+						Log.d(TAG, " > buildMediaSource -> Cookies not found for : " + uri.toString());
+					}
+				}
 				return new ExtractorMediaSource.Factory(mediaDataSourceFactory).createMediaSource(uri);
 			default: {
 				throw new IllegalStateException("Unsupported type: " + type);
@@ -991,6 +1008,12 @@ public class TiUIVideoView extends TiUIView
 	{
 		return TiExoplayerModule.getInstance().getDownloadTrackerProxy().buildDataSourceFactory(
 			useBandwidthMeter ? BANDWIDTH_METER : null);
+	}
+
+	private DataSource.Factory buildDataSourceFactory(boolean useBandwidthMeter, String cookie)
+	{
+		return TiExoplayerModule.getInstance().getDownloadTrackerProxy().buildDataSourceFactory(
+				useBandwidthMeter ? BANDWIDTH_METER : null, cookie);
 	}
 
 	private static String getDiscontinuityReasonString(@Player.DiscontinuityReason int reason)

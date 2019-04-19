@@ -9,11 +9,12 @@ def getSdkPath = { ->
     def jsonSlurper = new JsonSlurper()
     def hashStdOut = new ByteArrayOutputStream()
     exec {
-        commandLine "ti", "info", "-o", "json", "-t", "titanium", "--sdk", tiSDKName
+        commandLine "appc", "ti", "info", "-o", "json", "-t", "titanium", "--sdk", tiSDKName
         standardOutput = hashStdOut
     }
 
     def json = jsonSlurper.parseText(hashStdOut.toString())
+    //println json.titanium[ext.tiSDKName].path
     return json.titanium[ext.tiSDKName].path
 }
 

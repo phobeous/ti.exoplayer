@@ -9,6 +9,7 @@ package ru.netris.mobile.exoplayer;
 import org.appcelerator.kroll.KrollDict;
 import org.appcelerator.kroll.KrollModule;
 import org.appcelerator.kroll.annotations.Kroll;
+import org.appcelerator.kroll.common.Log;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
@@ -143,12 +144,17 @@ public class TiExoplayerModule extends KrollModule
 		new DownloadAction.Deserializer[] { DashDownloadAction.DESERIALIZER, HlsDownloadAction.DESERIALIZER,
 											SsDownloadAction.DESERIALIZER, ProgressiveDownloadAction.DESERIALIZER };
 
+	private String userAgent = "";
+	private boolean handleCookies = true;
+	private boolean useSimpleCache = false;
+
 	private static DownloadTrackerProxy dtProxy = null;
 	private static TiExoplayerModule self;
 
 	public TiExoplayerModule()
 	{
 		super();
+		Log.d(TAG, " + ::constructor");
 		self = this;
 	}
 
@@ -178,5 +184,41 @@ public class TiExoplayerModule extends KrollModule
 	public KrollDict getDefaultPlaybackParameters()
 	{
 		return VideoPlayerProxy.getPlaybackParametersDict(PlaybackParameters.DEFAULT);
+	}
+
+	@Kroll.method
+	public void setUserAgent(String value)
+	{
+		Log.d(TAG, "Setting user agent: " + value);
+		this.userAgent = value;
+	}
+
+	public String getUserAgent()
+	{
+		return this.userAgent;
+	}
+
+	@Kroll.method
+	public void setHandleCookies(boolean value)
+	{
+		Log.d(TAG, "Setting handleCookies: " + value);
+		this.handleCookies = value;
+	}
+
+	public boolean getHandleCookies()
+	{
+		return this.handleCookies;
+	}
+
+	@Kroll.method
+	public void setUseSimpleCache(boolean value)
+	{
+		Log.d(TAG, "Setting useSimpleCache: " + value);
+		this.useSimpleCache = value;
+	}
+
+	public boolean getUseSimpleCache()
+	{
+		return this.useSimpleCache;
 	}
 }

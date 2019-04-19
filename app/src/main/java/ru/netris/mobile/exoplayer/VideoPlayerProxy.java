@@ -67,7 +67,7 @@ import com.google.android.exoplayer2.util.Util;
 // clang-format on
 public class VideoPlayerProxy extends TiViewProxy implements TiLifecycle.OnLifecycleEvent
 {
-	private static final String TAG = "VideoPlayerProxy";
+	private static final String TAG = "TiExoplayerModule:VideoPlayerProxy";
 
 	protected static final int CONTROL_MSG_ACTIVITY_AVAILABLE = 101;
 	protected static final int CONTROL_MSG_CONFIG_CHANGED = 102;
