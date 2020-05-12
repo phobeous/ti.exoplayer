@@ -1009,8 +1009,8 @@ public class TiUIVideoView extends TiUIView
 
 	private DataSource.Factory buildDataSourceFactory(boolean useBandwidthMeter, String cookie)
 	{
-		return TiExoplayerModule.getInstance().getDownloadTrackerProxy().buildDataSourceFactory(
-				useBandwidthMeter ? BANDWIDTH_METER : null, cookie);
+		// useBandwidthMeter has been deprecated
+		return TiExoplayerModule.getInstance().getDownloadTrackerProxy().buildDataSourceFactory(cookie);
 	}
 
 	private static String getDiscontinuityReasonString(@Player.DiscontinuityReason int reason)

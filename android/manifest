@@ -15,4 +15,4 @@ name: ti.exoplayer
 moduleid: ru.netris.mobile.exoplayer
 guid: 44228dfe-0521-4c68-b0fd-543b13f8c865
 platform: android
-minsdk: 9.0.0
+minsdk: 9.0.2.inzdr

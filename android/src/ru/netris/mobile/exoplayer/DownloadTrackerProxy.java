@@ -34,7 +34,7 @@ import java.io.File;
 @Kroll.proxy
 public class DownloadTrackerProxy extends KrollProxy implements DownloadTracker.Listener
 {
-	private static final String TAG = "DownloadTrackerProxy";
+	private static final String TAG = "TiExoplayerModule:DownloadTrackerProxy";
 	private String downloadActionFile = "actions";
 	private String downloadTrackerActionFile = "tracked_actions";
 	private String downloadContentDirectory = "downloads";
@@ -51,7 +51,8 @@ public class DownloadTrackerProxy extends KrollProxy implements DownloadTracker.
 
 	public DownloadTrackerProxy()
 	{
-		userAgent = Util.getUserAgent(TiApplication.getAppRootOrCurrentActivity(), TiExoplayerModule.MODULE_NAME);
+		String moduleUserAgent = TiExoplayerModule.getInstance().getUserAgent();
+		userAgent = Util.getUserAgent(TiApplication.getAppRootOrCurrentActivity(),  moduleUserAgent.equals("") ? TiExoplayerModule.MODULE_NAME : moduleUserAgent);
 	}
 
 	/** Returns a {@link HttpDataSource.Factory}. */
@@ -60,12 +61,37 @@ public class DownloadTrackerProxy extends KrollProxy implements DownloadTracker.
 		return new DefaultHttpDataSourceFactory(userAgent);
 	}
 
+	public HttpDataSource.Factory buildHttpDataSourceFactory(String cookie)
+	{
+		DefaultHttpDataSourceFactory result = new DefaultHttpDataSourceFactory(userAgent);
+		result.getDefaultRequestProperties().set("Set-Cookie", cookie);
+		return result;
+	}
+
 	/** Returns a {@link DataSource.Factory}. */
 	public DataSource.Factory buildDataSourceFactory()
 	{
 		DefaultDataSourceFactory upstreamFactory =
 			new DefaultDataSourceFactory(TiApplication.getAppRootOrCurrentActivity(), buildHttpDataSourceFactory());
-		return buildReadOnlyCacheDataSource(upstreamFactory, getDownloadCache());
+		if(TiExoplayerModule.getInstance().getUseSimpleCache()) {
+			return buildReadOnlyCacheDataSource(upstreamFactory, getDownloadCache());
+		}
+		else {
+			return upstreamFactory;
+		}
+	}
+
+	/** Returns a {@link DataSource.Factory}. */
+	public DataSource.Factory buildDataSourceFactory(String cookie)
+	{
+		DefaultDataSourceFactory upstreamFactory =
+			new DefaultDataSourceFactory(TiApplication.getAppRootOrCurrentActivity(), buildHttpDataSourceFactory(cookie));
+		if(TiExoplayerModule.getInstance().getUseSimpleCache()) {
+			return buildReadOnlyCacheDataSource(upstreamFactory, getDownloadCache());
+		}
+		else {
+			return upstreamFactory;
+		}
 	}
 
 	public DownloadManager getDownloadManager()
