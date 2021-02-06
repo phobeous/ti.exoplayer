@@ -189,37 +189,40 @@ public class TiExoplayerModule extends KrollModule
 		return VideoPlayerProxy.getPlaybackParametersDict(PlaybackParameters.DEFAULT);
 	}
 
-	@Kroll.method
+	@Kroll.setProperty
 	public void setUserAgent(String value)
 	{
 		Log.d(TAG, "Setting user agent: " + value);
 		this.userAgent = value;
 	}
 
+	@Kroll.getProperty
 	public String getUserAgent()
 	{
 		return this.userAgent;
 	}
 
-	@Kroll.method
+	@Kroll.setProperty
 	public void setHandleCookies(boolean value)
 	{
 		Log.d(TAG, "Setting handleCookies: " + value);
 		this.handleCookies = value;
 	}
 
+	@Kroll.getProperty
 	public boolean getHandleCookies()
 	{
 		return this.handleCookies;
 	}
 
-	@Kroll.method
+	@Kroll.setProperty
 	public void setUseSimpleCache(boolean value)
 	{
 		Log.d(TAG, "Setting useSimpleCache: " + value);
 		this.useSimpleCache = value;
 	}
 
+	@Kroll.getProperty
 	public boolean getUseSimpleCache()
 	{
 		return this.useSimpleCache;

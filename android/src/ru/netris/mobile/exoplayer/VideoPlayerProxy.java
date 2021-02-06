@@ -19,9 +19,9 @@ import org.appcelerator.titanium.TiApplication;
 import org.appcelerator.titanium.TiBaseActivity;
 import org.appcelerator.titanium.TiC;
 import org.appcelerator.titanium.TiLifecycle;
-import org.appcelerator.titanium.io.TitaniumBlob;
 import org.appcelerator.titanium.proxy.TiViewProxy;
 import org.appcelerator.titanium.util.TiConvert;
+import org.appcelerator.titanium.view.TiCompositeLayout;
 import org.appcelerator.titanium.view.TiUIView;
 
 import ti.modules.titanium.media.MediaModule;
@@ -44,6 +44,8 @@ import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.util.Util;
+
+import android.webkit.URLUtil;
 
 // clang-format off
 @Kroll.proxy(creatableInModule = TiExoplayerModule.class, propertyAccessors = {
@@ -893,15 +895,11 @@ public class VideoPlayerProxy extends TiViewProxy implements TiLifecycle.OnLifec
 			cancelAllThumbnailImageRequests();
 			mTiThumbnailRetriever = new TiThumbnailRetriever();
 			String url = TiConvert.toString(getProperty(TiC.PROPERTY_URL));
-			if (url.startsWith("file://")) {
-				mTiThumbnailRetriever.setUri(
-					Uri.parse(this.resolveUrl(null, TiConvert.toString(this.getProperty(TiC.PROPERTY_URL)))));
-			} else {
-				String path = url.contains(":") ? new TitaniumBlob(url).getNativePath() : resolveUrl(null, url);
-				Uri uri = Uri.parse(path);
-				mTiThumbnailRetriever.setUri(uri);
+			if (!URLUtil.isValidUrl(url)) {
+				url = resolveUrl(null, url);
 			}
-
+			Uri uri = Uri.parse(url);
+			mTiThumbnailRetriever.setUri(uri);
 			mTiThumbnailRetriever.getBitmap(TiConvert.toIntArray(times), TiConvert.toInt(option),
 											createThumbnailResponseHandler(callback));
 		}

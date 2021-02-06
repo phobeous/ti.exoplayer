@@ -878,8 +878,9 @@ public class TiUIVideoView extends TiUIView
 		throws UnsupportedDrmException
 	{
 		HttpDataSource.Factory licenseDataSourceFactory =
-			new DefaultHttpDataSourceFactory(Util.getUserAgent(activity, "INZDR client R2D2 v.2 Android" /*TiExoplayerModule.MODULE_NAME*/),
-											 /* listener= */ null);
+			new DefaultHttpDataSourceFactory(Util.getUserAgent(activity, 
+					TiExoplayerModule.getInstance().getUserAgent()),
+				/* listener= */ null);
 		HttpMediaDrmCallback drmCallback = new HttpMediaDrmCallback(licenseUrl, licenseDataSourceFactory);
 		if (keyRequestPropertiesArray != null) {
 			for (int i = 0; i < keyRequestPropertiesArray.length - 1; i += 2) {
